@@ -15,10 +15,10 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    #[error("Calendar server {0} returned {1} instead of 200")]
+    #[error("Calendar server {0} returned HTTPS status code {1} instead of 200 OK")]
     Not200(String, u16),
 
-    #[error("Out of {calendars} calendars, we expected at least {at_least} good response, but there were this errors: {errors:?}")]
+    #[error("Out of {calendars} calendars, we expected at least {at_least} good responses, but there were these errors: {errors:?}")]
     TooFewResults {
         errors: Vec<String>,
         calendars: usize,
