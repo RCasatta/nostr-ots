@@ -19,14 +19,17 @@ pub fn timestamp_event(event_id: &str) -> Result<String, Error> {
     timestamp_event_with_options(event_id, &Options::default())
 }
 
-/// Like [`timestamp_event`] but with `options`. Options is a non-exhaustive struct to allow
-/// backward-compatible changes, but you cannot instantiate, use `let mut opt = Options::default()`
-/// and change needed options
+/// Like [`timestamp_event`] but with `options`.
+///
+/// Options is a non-exhaustive struct to allow backward-compatible changes, but you cannot
+/// instantiate, use `let mut opt = Options::default()` and change needed options
 pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result<String, Error> {
     let client = ureq::builder()
         .timeout(Duration::from_millis(options.timeout))
         .build();
 
+    // The `event_id` is a SHA256 hash of the hash-serialized event, so we can treat it as a hash
+    // directly and use it as the based for a detached timestamp file later.
     let hash = sha256::Hash::from_str(event_id)?;
 
     let results: Vec<_> = thread::scope(|s| {
@@ -72,8 +75,8 @@ pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result
     }
     let mut all = vec![];
     for (i, r) in oks.iter().enumerate() {
+        // Insert fork opcodes before each proof, except the last one.
         if i < oks.len() - 1 {
-            // fork op, but dont' fork last
             all.push(0xFF);
         }
         all.extend(r);

@@ -1,13 +1,15 @@
 #[non_exhaustive]
 pub struct Options {
-    /// Calendar server digest url
+    /// POST digest URLs of the calendar servers.
     pub calendars: Vec<String>,
 
-    /// Correct reply from `at_least` calendars is considered ok.
+    /// The minimum number of calendars needed for a timestamp to be considered usable.
+    ///
     /// Default: 2
     pub at_least: usize,
 
     /// Overall timeout for each request to a calendar in milliseconds.
+    ///
     /// Default: 5000 millisecs
     pub timeout: u64,
 }
