@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 #[non_exhaustive]
 pub struct Options {
     /// POST digest URLs of the calendar servers.
@@ -10,8 +12,8 @@ pub struct Options {
 
     /// Overall timeout for each request to a calendar in milliseconds.
     ///
-    /// Default: 5000 millisecs
-    pub timeout: u64,
+    /// Default: 5 seconds
+    pub timeout: Duration,
 }
 
 impl Default for Options {
@@ -19,7 +21,7 @@ impl Default for Options {
         Self {
             calendars: CALENDARS.map(|s| s.to_string()).to_vec(),
             at_least: 2,
-            timeout: 5000,
+            timeout: Duration::from_secs(5),
         }
     }
 }

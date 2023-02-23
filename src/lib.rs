@@ -4,7 +4,7 @@ use opentimestamps::{
     ser::{Deserializer, DigestType},
     DetachedTimestampFile, Timestamp,
 };
-use std::{str::FromStr, thread, time::Duration};
+use std::{str::FromStr, thread};
 
 pub use error::Error;
 pub use options::Options;
@@ -25,7 +25,7 @@ pub fn timestamp_event(event_id: &str) -> Result<String, Error> {
 /// instantiate, use `let mut opt = Options::default()` and change needed options
 pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result<String, Error> {
     let client = ureq::builder()
-        .timeout(Duration::from_millis(options.timeout))
+        .timeout(options.timeout)
         .build();
 
     // The `event_id` is a SHA256 hash of the hash-serialized event, so we can treat it as a hash
