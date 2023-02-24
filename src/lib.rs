@@ -33,15 +33,15 @@ pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result
     let results: Vec<_> = thread::scope(|s| {
         let mut handles = vec![];
 
-        for el in options.aggregators.iter() {
+        for digest_url in options.digest_endpoints() {
             let h = s.spawn(|| {
-                let body = client.post(el).send(&hash[..])?;
+                let body = client.post(&digest_url).send(&hash[..])?;
                 if body.status() == 200 {
                     let mut result = vec![];
                     body.into_reader().read_to_end(&mut result)?;
                     Ok(result)
                 } else {
-                    Err(Error::Not200(el.to_string(), body.status()))
+                    Err(Error::Not200(digest_url, body.status()))
                 }
             });
             handles.push(h);
@@ -135,12 +135,12 @@ mod test {
         match err {
             Err(Error::TooFewResults {
                 errors,
-                calendars,
+                aggregators,
                 at_least,
             }) => {
                 assert_eq!(errors.len(), 1);
                 assert_eq!(at_least, 4);
-                assert_eq!(calendars, 4);
+                assert_eq!(aggregators, 4);
             }
             _ => assert!(false),
         }

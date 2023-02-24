@@ -15,6 +15,11 @@ pub struct Options {
     /// Default: 5 seconds
     pub timeout: Duration,
 }
+impl Options {
+    pub(crate) fn digest_endpoints(&self) -> impl Iterator<Item = String> + '_ {
+        self.aggregators.iter().map(|agg| format!("{agg}/digest"))
+    }
+}
 
 impl Default for Options {
     fn default() -> Self {
@@ -27,8 +32,8 @@ impl Default for Options {
 }
 
 pub const AGGREGATORS: [&str; 4] = [
-    "https://a.pool.opentimestamps.org/digest",
-    "https://b.pool.opentimestamps.org/digest",
-    "https://a.pool.eternitywall.com/digest",
-    "https://ots.btc.catallaxy.com/digest",
+    "https://a.pool.opentimestamps.org",
+    "https://b.pool.opentimestamps.org",
+    "https://a.pool.eternitywall.com",
+    "https://ots.btc.catallaxy.com",
 ];
