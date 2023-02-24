@@ -8,24 +8,33 @@ use std::{str::FromStr, thread};
 
 pub use error::Error;
 pub use options::Options;
+pub use stamper::Stamper;
+pub use stamper::StamperError;
 
 mod error;
 mod options;
+mod stamper;
 
 /// Timestamp an `event_id` according to [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md), returning a base64 ots proof.
 ///
 /// `event_id` must be an event id as defined in [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md)
+#[cfg(feature = "ureq")]
 pub fn timestamp_event(event_id: &str) -> Result<String, Error> {
-    timestamp_event_with_options(event_id, &Options::default())
+    let options = Options::with_stamper(
+        stamper::ureq::UreqStamper::new(std::time::Duration::from_secs(5))
+            .expect("ureq stamper creation doesn't fail"),
+    );
+    timestamp_event_with_options(event_id, &options)
 }
 
 /// Like [`timestamp_event`] but with `options`.
 ///
 /// Options is a non-exhaustive struct to allow backward-compatible changes, but you cannot
 /// instantiate, use `let mut opt = Options::default()` and change needed options
-pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result<String, Error> {
-    let client = ureq::builder().timeout(options.timeout).build();
-
+pub fn timestamp_event_with_options<S: Stamper>(
+    event_id: &str,
+    options: &Options<S>,
+) -> Result<String, Error> {
     // The `event_id` is a SHA256 hash of the hash-serialized event, so we can treat it as a hash
     // directly and use it as the based for a detached timestamp file later.
     let hash = sha256::Hash::from_str(event_id)?;
@@ -34,16 +43,7 @@ pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result
         let mut handles = vec![];
 
         for digest_url in options.digest_endpoints() {
-            let h = s.spawn(|| {
-                let body = client.post(&digest_url).send(&hash[..])?;
-                if body.status() == 200 {
-                    let mut result = vec![];
-                    body.into_reader().read_to_end(&mut result)?;
-                    Ok(result)
-                } else {
-                    Err(Error::Not200(digest_url, body.status()))
-                }
-            });
+            let h = s.spawn(move || options.stamper.stamp(&digest_url, &hash[..]));
             handles.push(h);
         }
 
@@ -95,12 +95,14 @@ pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result
     Ok(b64)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ureq"))]
 mod test {
+    use std::time::Duration;
+
     use base64::{engine::general_purpose, Engine};
     use opentimestamps::{ser::DigestType, DetachedTimestampFile};
 
-    use crate::{timestamp_event, timestamp_event_with_options, Error, Options};
+    use crate::{stamper, timestamp_event, timestamp_event_with_options, Error, Options, Stamper};
 
     #[test]
     fn test_timestamp_event() {
@@ -118,7 +120,8 @@ mod test {
 
     #[test]
     fn test_timestamp_event_with_options() {
-        let mut options = Options::default();
+        let mut options =
+            Options::with_stamper(stamper::ureq::UreqStamper::new(Duration::from_secs(5)).unwrap());
 
         assert!(timestamp_event_with_options(
             "f5e5842b677ec450c5668daf8f99827cba91a9d80705ab3e0422f0ac4519cf84",

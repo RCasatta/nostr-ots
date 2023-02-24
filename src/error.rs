@@ -1,7 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Ureq error: {0}")]
-    Ureq(Box<ureq::Error>), // boxed because ureq::Error is 240 bytes
+    #[error("Transport error: {0}")]
+    Transport(String),
 
     #[error(transparent)]
     Hashes(#[from] bitcoin_hashes::Error),
@@ -24,10 +24,4 @@ pub enum Error {
         aggregators: usize,
         at_least: usize,
     },
-}
-
-impl From<ureq::Error> for Error {
-    fn from(value: ureq::Error) -> Self {
-        Error::Ureq(Box::new(value))
-    }
 }
