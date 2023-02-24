@@ -1,7 +1,7 @@
-use std::time::Duration;
+use crate::Stamper;
 
 #[non_exhaustive]
-pub struct Options {
+pub struct Options<S: Stamper> {
     /// POST digest URLs of the aggregator servers.
     pub aggregators: Vec<String>,
 
@@ -10,23 +10,20 @@ pub struct Options {
     /// Default: 2
     pub at_least: usize,
 
-    /// Overall timeout for each request to a aggregator in milliseconds.
-    ///
-    /// Default: 5 seconds
-    pub timeout: Duration,
+    pub stamper: S,
 }
-impl Options {
+impl<S: Stamper> Options<S> {
     pub(crate) fn digest_endpoints(&self) -> impl Iterator<Item = String> + '_ {
         self.aggregators.iter().map(|agg| format!("{agg}/digest"))
     }
 }
 
-impl Default for Options {
-    fn default() -> Self {
+impl<S: Stamper> Options<S> {
+    pub fn with_stamper(stamper: S) -> Self {
         Self {
             aggregators: AGGREGATORS.map(|s| s.to_string()).to_vec(),
             at_least: 2,
-            timeout: Duration::from_secs(5),
+            stamper,
         }
     }
 }
