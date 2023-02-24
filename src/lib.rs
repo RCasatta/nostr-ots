@@ -24,9 +24,7 @@ pub fn timestamp_event(event_id: &str) -> Result<String, Error> {
 /// Options is a non-exhaustive struct to allow backward-compatible changes, but you cannot
 /// instantiate, use `let mut opt = Options::default()` and change needed options
 pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result<String, Error> {
-    let client = ureq::builder()
-        .timeout(options.timeout)
-        .build();
+    let client = ureq::builder().timeout(options.timeout).build();
 
     // The `event_id` is a SHA256 hash of the hash-serialized event, so we can treat it as a hash
     // directly and use it as the based for a detached timestamp file later.
@@ -102,7 +100,7 @@ mod test {
     use base64::{engine::general_purpose, Engine};
     use opentimestamps::{ser::DigestType, DetachedTimestampFile};
 
-    use crate::{timestamp_event, timestamp_event_with_options, Options};
+    use crate::{timestamp_event, timestamp_event_with_options, Error, Options};
 
     #[test]
     fn test_timestamp_event() {
@@ -130,18 +128,26 @@ mod test {
 
         options.calendars[0] = "http://notexist".to_string();
         options.at_least = 4;
-        assert_eq!(
-            timestamp_event_with_options(
-                "f5e5842b677ec450c5668daf8f99827cba91a9d80705ab3e0422f0ac4519cf84",
-                &options,
-            )
-            .unwrap_err()
-            .to_string(),
-            "Out of 4 calendars, we expected at least 4 good response, but there were this errors: [\"http://notexist/: Dns Failed: resolve dns name 'notexist:80': failed to lookup address information: Name or service not known\"]"
+        let err = timestamp_event_with_options(
+            "f5e5842b677ec450c5668daf8f99827cba91a9d80705ab3e0422f0ac4519cf84",
+            &options,
         );
+        match err {
+            Err(Error::TooFewResults {
+                errors,
+                calendars,
+                at_least,
+            }) => {
+                assert_eq!(errors.len(), 1);
+                assert_eq!(at_least, 4);
+                assert_eq!(calendars, 4);
+            }
+            _ => assert!(false),
+        }
 
         options.calendars = vec!["http://notexist".to_string()];
         options.at_least = 1;
+
         assert!(timestamp_event_with_options(
             "f5e5842b677ec450c5668daf8f99827cba91a9d80705ab3e0422f0ac4519cf84",
             &options,
