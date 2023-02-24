@@ -33,7 +33,7 @@ pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result
     let results: Vec<_> = thread::scope(|s| {
         let mut handles = vec![];
 
-        for el in options.calendars.iter() {
+        for el in options.aggregators.iter() {
             let h = s.spawn(|| {
                 let body = client.post(el).send(&hash[..])?;
                 if body.status() == 200 {
@@ -68,7 +68,7 @@ pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result
         return Err(Error::TooFewResults {
             errors: errs.iter().map(|e| e.to_string()).collect(),
             at_least: options.at_least,
-            calendars: options.calendars.len(),
+            aggregators: options.aggregators.len(),
         });
     }
     let mut all = vec![];
@@ -126,7 +126,7 @@ mod test {
         )
         .is_ok());
 
-        options.calendars[0] = "http://notexist".to_string();
+        options.aggregators[0] = "http://notexist".to_string();
         options.at_least = 4;
         let err = timestamp_event_with_options(
             "f5e5842b677ec450c5668daf8f99827cba91a9d80705ab3e0422f0ac4519cf84",
@@ -145,7 +145,7 @@ mod test {
             _ => assert!(false),
         }
 
-        options.calendars = vec!["http://notexist".to_string()];
+        options.aggregators = vec!["http://notexist".to_string()];
         options.at_least = 1;
 
         assert!(timestamp_event_with_options(
