@@ -1,5 +1,5 @@
 use base64::{engine::general_purpose, Engine};
-use bitcoin_hashes::sha256;
+use bitcoin_hashes::{sha256, Hash};
 use opentimestamps::{
     ser::{Deserializer, DigestType},
     DetachedTimestampFile, Timestamp,
@@ -81,7 +81,7 @@ pub fn timestamp_event_with_options(event_id: &str, options: &Options) -> Result
     }
 
     let mut deserializer = Deserializer::new(&all[..]);
-    let timestamp = Timestamp::deserialize(&mut deserializer, hash.to_vec())?;
+    let timestamp = Timestamp::deserialize(&mut deserializer, hash.to_byte_array().to_vec())?;
 
     let detached = DetachedTimestampFile {
         digest_type: DigestType::Sha256,
