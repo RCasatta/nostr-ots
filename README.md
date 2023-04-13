@@ -1,28 +1,21 @@
 
 Proof of concept implementation of Nostr [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) OpenTimestamps Attestations for Events
 
-# Usage
-
-With the following nostr event
-
-```json
-{
-  "id": ...,
-  "kind": ...,
-  ...,
-  ...,
-  "ots": <base64-encoded OTS file data>
-}
-```
-
+## Usage
 
 ```rust
-let event_id = event_json["id"];
+let mut event_json = serde_json::json!(
+  {
+   "id":"2be17aa3031bdcb006f0fce80c146dea9c1c0268b0af2398bb673365c6444d45"
+   // other event fields as defined in https://github.com/nostr-protocol/nips/blob/master/01.md#events-and-signatures
+  }
+);
+let event_id = event_json["id"].as_str().unwrap();
 let ots = nostr_ots::timestamp_event(event_id).unwrap();
-event_json["ots"] = ots;
+event_json["ots"] = serde_json::Value::String(ots);
 ```
 
-# Test
+## Test
 
 Test implementation against OpenTimestamps python [client](https://github.com/opentimestamps/opentimestamps-client)
 
@@ -33,7 +26,7 @@ $ echo "Proof of concept implementation of NIP-03" > example
 $ shasum -a 256 example
 d6f3c7616621ea55fa99444dc82ce7eafed2e71352a0890882b2e42285b90724  example
 
-$ cargo run --example stamp -- d6f3c7616621ea55fa99444dc82ce7eafed2e71352a0890882b2e42285b90724  example | base64 --decode >example.ots
+$ cargo run --example stamp -- d6f3c7616621ea55fa99444dc82ce7eafed2e71352a0890882b2e42285b90724 | base64 --decode >example.ots
 
 $ ots info example.ots
 File sha256 hash: d6f3c7616621ea55fa99444dc82ce7eafed2e71352a0890882b2e42285b90724
@@ -64,14 +57,6 @@ Timestamp:
     verify PendingAttestation('https://alice.btc.calendar.opentimestamps.org')
 ```
 
-# TODO
+## Used by
 
-- Support async other than blocking
-- Better support of upstream library to generate timestamp
-- ots client prepend some data before submitting the proof to avoid leaking the real hash
-- General code improvement
-- Create a struct holding the http client to avoid reinitializing every time
-- Better integration with nostrs structs, if a crate providing general/standard struct/traits exists
-- handle upgrade of the ots in an event json
-- handle verify of the ots in the event json, outputs ots proof date
-- use httptest for local testing
+- [nostr crate](https://crates.io/crates/nostr)

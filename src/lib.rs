@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use base64::{engine::general_purpose, Engine};
 use bitcoin_hashes::{sha256, Hash};
 use opentimestamps::{
